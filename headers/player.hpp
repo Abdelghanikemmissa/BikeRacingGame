@@ -1,4 +1,3 @@
-
 #pragma once
 #include <SDL2/SDL.h>
 
@@ -16,6 +15,11 @@ public:
     SDL_Rect getRect() const;
     bool isJumping() const;
     SDL_Rect getCollider() const; 
+
+    // Méthode pour obtenir la position X
+    float getPositionX() const {
+        return positionX;
+    }
     
 private:
     SDL_Texture* texture;
@@ -28,4 +32,7 @@ private:
     const float GRAVITY = 900.0f;
     const float JUMP_FORCE = 670.0f;
     const float MOVE_SPEED = 400.0f;
+
+    float positionX; // Position X du joueur
+    float positionY; // Position Y du joueur
 };

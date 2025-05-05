@@ -19,7 +19,9 @@ bool Player::init(SDL_Renderer* renderer, const char* imagePath) {
 void Player::update(float deltaTime) {
     // Mouvement horizontal
     x += velocityX * deltaTime;
-    
+    positionX += velocityX * deltaTime;
+    if (positionX < 0) positionX = 0;
+    if (positionX > SCREEN_WIDTH) positionX = SCREEN_WIDTH;
     // Appliquer la gravité
     if (y < groundLevel || velocityY < 0) {
         velocityY += GRAVITY * deltaTime;

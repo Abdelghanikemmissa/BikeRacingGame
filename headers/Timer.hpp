@@ -29,3 +29,4 @@ private:
     
     std::string getFormattedTime() const;
 };
+
