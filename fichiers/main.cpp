@@ -6,13 +6,14 @@
 #include "../headers/player.hpp"
 #include "../headers/button.hpp"
 #include "../headers/Obstacle.hpp"
+#include "../headers/score.hpp"
 
 const int SCREEN_WIDTH = 1000;
 const int SCREEN_HEIGHT = 700;
 const int GROUND_HEIGHT = SCREEN_HEIGHT - 10;
 const float OBSTACLE_SPAWN_INTERVAL = 2.0f;
 const float SCROLL_SPEED = 300.0f;
-const int FINISH_LINE_WORLD_X = 1000;
+const int FINISH_LINE_WORLD_X = 5000;
 
 struct GameState {
     bool showIntro = true;
@@ -77,6 +78,13 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    if (TTF_Init() == -1) {
+        std::cerr << "TTF init error: " << TTF_GetError() << std::endl;
+        IMG_Quit();
+        SDL_Quit();
+        return 1;
+    }
+
     SDL_Window* window = SDL_CreateWindow("Bike Racing Game",
                                           SDL_WINDOWPOS_CENTERED,
                                           SDL_WINDOWPOS_CENTERED,
@@ -112,13 +120,7 @@ int main(int argc, char* argv[]) {
     SDL_Texture* victoryTexture = IMG_LoadTexture(renderer, "pictures/win_screen.png");
     SDL_Texture* finishLineTexture = IMG_LoadTexture(renderer, "pictures/finish.png");
 
-    if (!finishLineTexture) {
-        std::cerr << "Failed to load finish line texture!" << std::endl;
-    }
-
-    // SDL_Rect finishLineRect = {0, GROUND_HEIGHT - 150, 50, 160};
     SDL_Rect finishLineRect = {0, GROUND_HEIGHT - 300, 100, 300};
-
 
     Button playButton(renderer, "pictures/play.png",
                       {SCREEN_WIDTH/2 - 225, SCREEN_HEIGHT/2 - 205, 450, 600});
@@ -127,7 +129,6 @@ int main(int argc, char* argv[]) {
 
     Player player;
     if (!player.init(renderer, "pictures/b1.png")) {
-        std::cerr << "Failed to load player texture!" << std::endl;
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
@@ -140,7 +141,6 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < 40; ++i) {
         Obstacle obs;
         if (!obs.load(renderer, "pictures/box4.png")) {
-            std::cerr << "Failed to load obstacle texture!" << std::endl;
             SDL_DestroyRenderer(renderer);
             SDL_DestroyWindow(window);
             SDL_Quit();
@@ -148,6 +148,14 @@ int main(int argc, char* argv[]) {
         }
         obs.setSize(120, 120);
         obstacles.push_back(obs);
+    }
+
+    Score score;
+    if (!score.init(renderer)) {
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
     }
 
     GameState gameState;
@@ -173,6 +181,7 @@ int main(int argc, char* argv[]) {
                     player.reset();
                     roadOffset = 0;
                     for (auto& obs : obstacles) obs.reset();
+                    score.reset();
                 } else if (exitButton.isClicked(x, y)) {
                     running = false;
                 }
@@ -193,16 +202,14 @@ int main(int argc, char* argv[]) {
         if (gameState.inGame) {
             roadOffset -= SCROLL_SPEED * deltaTime;
             player.update(deltaTime);
+            score.update(deltaTime);
 
-            // Update finish line rect based on scrolling
             finishLineRect.x = FINISH_LINE_WORLD_X + static_cast<int>(roadOffset);
 
-            // Check win by collision
             if (!gameState.gameWon && checkCollision(player.getCollider(), finishLineRect)) {
                 gameState.inGame = false;
                 gameState.gameWon = true;
                 gameState.gameOverStartTime = SDL_GetTicks();
-                std::cout << "Victory! Finish line touched." << std::endl;
             }
 
             obstacleSpawnTimer += deltaTime;
@@ -246,6 +253,7 @@ int main(int argc, char* argv[]) {
 
             player.render(renderer);
             for (auto& obs : obstacles) obs.render(renderer);
+            score.render(renderer);
         } else if (gameState.gameOver) {
             if (gameover) SDL_RenderCopy(renderer, gameover, nullptr, nullptr);
             if (SDL_GetTicks() - gameState.gameOverStartTime > 3000) {
@@ -278,11 +286,9 @@ int main(int argc, char* argv[]) {
     if (menuBg) SDL_DestroyTexture(menuBg);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    TTF_Quit();
     IMG_Quit();
     SDL_Quit();
 
     return 0;
 }
-
-
-
